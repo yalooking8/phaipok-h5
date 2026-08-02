@@ -932,12 +932,42 @@
       } catch (e) {}
     }
 
+    // 代理二维码：默认=本人；?a=a01 起为代理
+    var AGENT_QR = {
+      a01: "qr/a01.png"
+    };
+
+    function currentAgentId() {
+      try {
+        var q = new URLSearchParams(window.location.search || "");
+        var id = (q.get("a") || q.get("agent") || "").toLowerCase();
+        return id.replace(/[^a-z0-9_-]/g, "");
+      } catch (e) {
+        return "";
+      }
+    }
+
+    function applyQr() {
+      var img = $("qrImg");
+      if (!img) return;
+      var agent = currentAgentId();
+      var isAgent = !!(agent && AGENT_QR[agent]);
+      var src = isAgent ? AGENT_QR[agent] : (QR_DATA || "qr/default.jpg");
+      img.onerror = function () {
+        // 代理码加载失败时不回退到本人码，避免窜号
+        if (isAgent) return;
+        if (QR_DATA && img.src !== QR_DATA) img.src = QR_DATA;
+      };
+      img.src = src;
+      if (img.dataset) img.dataset.agent = agent || "default";
+    }
+
     function boot() {
       try {
         var y = $("year");
         if (y) y.textContent = String(new Date().getFullYear());
         buildScene();
-        if (QR_DATA && $("qrImg")) $("qrImg").src = QR_DATA;
+        applyQr();
         bindTap($("navStart"), startTest);
         bindTap($("heroStart"), startTest);
         bindTap($("claimBtn"), function () {
